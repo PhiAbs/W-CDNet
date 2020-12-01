@@ -4,7 +4,10 @@ The core of our model, the *Change Segmentation and Classification* (CSC) module
 
 ![W-CDNet model structure](docs/model_all_simplified_cropped.svg)
 
-## Requirements
+## Example
+Example scripts are provided for training and testing on the AICD dataset. 
+
+### Setup
 See *requirements.txt* or *requirements_gpu.txt*, depending on whether a GPU is available or not.
 Install with:
 ```
@@ -15,10 +18,6 @@ or
 pip install -r requirements_gpu.txt
 ```
 
-## Examples
-Example scripts are provided for training and testing on the AICD dataset. 
-
-### Preparation
 We use the [publicly available keras-implementation for the CRF-RNN layer](https://github.com/sadeepj/crfasrnn_keras).
 ```
 git submodule init
@@ -63,7 +62,16 @@ chmod +x aicd_run_tests_weakly_supervised.sh
 - The results will be saved under *Examples/results*
 
 
-### Cite
+## Image-Level Labels for AICD Dataset
+### Dataset
+Since the AICD dataset is no longer available on the original website, I uploaded it to google drive. You can download it from [here](https://drive.google.com/file/d/1anlZYIDaZfnFvijg8SfYqt7CvyMDhR_E/view?usp=sharing). <br>
+The dataset is also available on kaggle, see [here](https://www.kaggle.com/kmader/aerial-change-detection-in-video-games). <br>
+
+### Labels
+You can find the image-level labels in the folder *AICD_image_level_labels*. The file *classes.csv* contains the class IDs and a description for each class. The file *image_level_labels.csv* associates each image (defined by *view* and *scene*) with a class. 
+
+
+## Cite
 [arXiv](https://arxiv.org/abs/2011.03577)
 
 ```
@@ -76,13 +84,3 @@ chmod +x aicd_run_tests_weakly_supervised.sh
       primaryClass={cs.CV}
 }
 ```
-
-
-
-## Image-Level Labels for AICD Dataset
-### Dataset
-Since the AICD dataset is no longer available on the original website, I uploaded it to google drive. You can download it from [here](https://drive.google.com/file/d/1anlZYIDaZfnFvijg8SfYqt7CvyMDhR_E/view?usp=sharing). <br>
-The dataset is also available on kaggle, see [here](https://www.kaggle.com/kmader/aerial-change-detection-in-video-games). <br>
-
-### Labels
-You can find the image-level labels in the folder *AICD_image_level_labels*. The file *classes.csv* contains the class IDs and a description for each class. The file *image_level_labels.csv* associates each image (defined by *view* and *scene*) with a class. 
