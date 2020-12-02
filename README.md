@@ -1,6 +1,5 @@
 # W-CDNet
-This repo presents W-CDNet, a neural network for weakly supervised change detection. The model uses a siamese network structure, consisting of two U-Nets with shared weights. 
-The core of our model, the *Change Segmentation and Classification* (CSC) module, makes sure that the network learns to generate a change mask even if the model is being trained with weak supervision only.
+This repo presents [W-CDNet](https://arxiv.org/abs/2011.03577), a neural network for weakly supervised change detection. The model uses a siamese network structure, consisting of two U-Nets with shared weights. The core of the model, the *Change Segmentation and Classification* (CSC) module, makes sure that the network learns to generate a change mask even if the model is being trained with weak supervision only.
 
 ![W-CDNet model structure](docs/model_all_simplified_cropped.svg)
 
@@ -33,7 +32,6 @@ Training is split up into "Train" and "Finetune".
 - Go to *Examples/params/aicd_train.py*
   - set a new **run_index** (increase cunter)
   - set **finetune** to False
-  - set **fully_supervised** to False
 - Go to Examples and run
 ```
 python aicd_train_weakly_supervised.py
@@ -42,7 +40,6 @@ python aicd_train_weakly_supervised.py
 **Finetune**:
 - Go to *Examples/params/aicd_train.py*
   - set **finetune** to True
-  - set **fully_supervised** to False
 - Go to Examples and run
 ```
 python aicd_train_weakly_supervised.py
