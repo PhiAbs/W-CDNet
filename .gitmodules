@@ -1,0 +1,3 @@
+[submodule "Examples/crfasrnn_keras"]
+	path = Examples/crfasrnn_keras
+	url = https://github.com/PhiAbs/crfasrnn_keras.git
