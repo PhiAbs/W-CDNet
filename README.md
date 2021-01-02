@@ -5,9 +5,10 @@ This repo presents [W-CDNet](https://arxiv.org/abs/2011.03577), a neural network
 
 ![W-CDNet model structure](docs/model_all_simplified_cropped.svg)
 
+---
 ## Demo
 Demo scripts are provided for training and testing on the AICD dataset. 
-A notebook is provided which can be run on google Colab. In order to understand how to use the scripts in this repo, please refer to the notebook. Setup steps are shown below.
+A demo [notebook](Demo/demo.ipynb) is provided which can be run on google Colab. In order to understand how to use the scripts in this repo, please refer to the notebook. Setup steps are shown below.
 
 ### Setup
 See *requirements.txt* or *requirements_gpu.txt*, depending on whether a GPU is available or not.
@@ -35,6 +36,7 @@ gdown https://drive.google.com/uc?id=1HLa4xpUZBcK_1__24_QuW3YPFRI_H5rF
 unzip AICD_strong_shadows_incl_no_change.zip
 ```
 
+---
 ## Image-Level Labels for AICD Dataset
 
 ### Dataset
@@ -44,7 +46,7 @@ The dataset is also available on kaggle, see [here](https://www.kaggle.com/kmade
 ### Labels
 You can find the image-level labels in the folder *AICD_image_level_labels*. The file *classes.csv* contains the class IDs and a description for each class. The file *image_level_labels.csv* associates each image (defined by *view* and *scene*) with a class. 
 
-
+---
 ## Cite
 [arXiv](https://arxiv.org/abs/2011.03577)
 
