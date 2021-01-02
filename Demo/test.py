@@ -144,7 +144,7 @@ class TestWNet():
                 plt.axis('off')
                 plt.subplot(1,5,5)
                 plt.imshow(seg_mask_pred)
-                plt.gca().set_title('Raw segmentation mask')
+                plt.gca().set_title('Raw change mask')
                 plt.axis('off')
                 plt.show()
                 time.sleep(2)
