@@ -7,6 +7,7 @@ This repo presents [W-CDNet](https://arxiv.org/abs/2011.03577), a neural network
 
 ## Demo
 Demo scripts are provided for training and testing on the AICD dataset. 
+A notebook is provided which can be run on google Colab.
 
 ### Setup
 See *requirements.txt* or *requirements_gpu.txt*, depending on whether a GPU is available or not.

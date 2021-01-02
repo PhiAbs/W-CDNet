@@ -377,20 +377,21 @@ class W_Net():
         return model
 
 
-    def add_crf_double_stream_inputsize_128_remapfactor_16(self):
+    def add_crf_double_stream_inputsize_128_remapfactor_16(self, load_pretrained_weights):
         # load pretrained model
+        # model_pretrained = self.w_net_siamese_aligned_images_custom_segmentation_pretrained_unets_more_subtractions_stronger_remapping()
         model_pretrained = self.double_stream_6_subs_64_filters_remapfactor_32()
-        model_pretrained.load_weights(self.args.pretrained_model_file)
+        
+        if load_pretrained_weights:
+            model_pretrained.load_weights(self.args.pretrained_model_file)
 
         # the input to the crf_rnn block has to have the following properties:
         # - RGB image (range [0, 255]) -> invert vgg16 preprocessing
         # - shape: [1, H, W, num_classes] -> in our case, num_classes == 2 since we have "change" and "no change"
         # - Class 0: Background
-        # - Class 1: Foreground
-        # - Use Softmax: Foreground + Background have to sum up to 1
+        # - Class 1: Foreground -> background + foreground values have to sum up to 1
 
-        # map values from [0, 1] to [-X, X]. 
-        # The remap factor here does not have to be the same as in pre-training
+        # map values from [0, 1] to [-8, 8]
         remap_factor = 16
         seg_positive_reduced_normalized_mult = Lambda(lambda x: tf.math.multiply_no_nan(x, remap_factor), name='seg_process_6')(model_pretrained.get_layer('seg_process_5').output)
         seg_positive_reduced_normalized_remapped = Lambda(lambda x: tf.math.subtract(x, remap_factor/2), name='seg_process_7')(seg_positive_reduced_normalized_mult)
@@ -400,12 +401,14 @@ class W_Net():
         # background is simply 1 - foreground
         ones_matrix = Lambda(lambda x: tf.ones_like(x), name='seg_process_ones_matrix')(foreground_sigmoid)
         background_sigmoid = Subtract(name='seg_process_background')([ones_matrix, foreground_sigmoid])
+        # background_sigmoid = Lambda(lambda x: tf.math.subtract(1, x), name='seg_process_background')(foreground_sigmoid)
 
         # concatenate background and foreground
         crf_rnn_unary = concatenate([background_sigmoid, foreground_sigmoid], axis=3, name='seg_process_concat')
 
         # transform the input image to RGB color space (de-process it: BGR->RGB, add imagenet mean)
         # TODO: this deprocessing is only correct if used with VGG16 preprocessing!!!!
+        # image_current_deprocessed = Lambda(lambda x: concatenate([np.expand_dims(x[:,:,:,2], axis=3), np.expand_dims(x[:,:,:,1], axis=3), np.expand_dims(x[:,:,:,0], axis=3)], axis=3, name='seg_process_deprocess_1'))(image_current)
         channel_r = Lambda(lambda x: tf.expand_dims(x[:,:,:,2], axis=3), name='seg_process_channel_r')(model_pretrained.get_layer('image_current').input)
         channel_g = Lambda(lambda x: tf.expand_dims(x[:,:,:,1], axis=3), name='seg_process_channel_g')(model_pretrained.get_layer('image_current').input)
         channel_b = Lambda(lambda x: tf.expand_dims(x[:,:,:,0], axis=3), name='seg_process_channel_b')(model_pretrained.get_layer('image_current').input)
@@ -414,19 +417,25 @@ class W_Net():
         imagenet_mean = [103.939, 116.779, 123.68]
         image_current_deprocessed = Lambda(lambda x: tf.math.add(x[0], x[1]), name='seg_process_deprocess_mean')([image_current_deprocessed, imagenet_mean])
 
+        # upscale both image and unary. I hope that this will help to better segment the images!
+        # images are upsampled to 512x512 (assuming that input is 128x128)
+        image_current_deprocessed_upscaled = UpSampling2D(size=4, interpolation='bilinear', name='seg_process_upsample_1')(image_current_deprocessed)
+        crf_rnn_unary_upscaled = UpSampling2D(size=4, interpolation='bilinear', name='seg_process_upsample_2')(crf_rnn_unary)
+
         # apply crf
-        # Resizing to 512x512 gave good results, even if the input images had size 128x128
-        # TODO do we actually need to resize it to 512x512? or is 128x128 also ok?
         crf_rnn = CrfRnnLayer(image_dims=(512, 512),
                 num_classes=2,
                 theta_alpha=160.,
                 theta_beta=3.,
                 theta_gamma=3.,
                 num_iterations=5,
-                name='crfrnn')([crf_rnn_unary, image_current_deprocessed])
+                name='crfrnn')([crf_rnn_unary_upscaled, image_current_deprocessed_upscaled])
+
+        # downsample the crf_rnn layer output again to 128x128
+        crf_rnn_downsampled = AveragePooling2D(pool_size=4, strides=4, padding='same', data_format='channels_last')(crf_rnn)
 
         # apply softmax function
-        crf_rnn_softmax = Softmax(axis=-1, name='crf_softmax')(crf_rnn)
+        crf_rnn_softmax = Softmax(axis=-1, name='crf_softmax')(crf_rnn_downsampled)
 
         # extract first channel of the crf_rnn output
         # channel 0: background
@@ -434,7 +443,6 @@ class W_Net():
         crf_rnn_channel_1 = Lambda(lambda x: x[:,:,:,1], name='crf_rnn_channel_1')(crf_rnn_softmax)
         crf_rnn_channel_1 = Lambda(lambda x: x[:,:,:,np.newaxis], name='crf_rnn_channel_1_newaxis')(crf_rnn_channel_1)
 
-        # Segment 
         image_current_seg_mult = model_pretrained.get_layer('seg_process_multiply')([crf_rnn_channel_1, model_pretrained.get_layer('image_current').input])
         classifier_output = model_pretrained.get_layer('vgg16')(image_current_seg_mult)
         gav = model_pretrained.get_layer('classify_global_avg_pool')(classifier_output)
