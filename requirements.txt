@@ -1,0 +1,10 @@
+google-auth-oauthlib==0.4.1
+imgaug==0.4.0
+matplotlib==3.0.3
+numpy==1.17.4
+opencv-python==4.0.0.21
+PyYAML==5.1.2
+scikit-image==0.15.0
+scikit-learn==0.22
+segmentation-models==1.0.1
+tensorflow==2.0.0
