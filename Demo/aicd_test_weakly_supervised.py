@@ -71,7 +71,7 @@ class TestWNet():
         WNet = arch.W_Net(
             num_classes=num_classes,
             input_size=self.args['image_size'],
-            self.args=self.args)
+            args=self.args)
 
         if self.finetune:
             model = WNet.add_crf_double_stream_inputsize_128_remapfactor_16(load_pretrained_weights=False)
