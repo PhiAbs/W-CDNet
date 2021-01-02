@@ -2,17 +2,21 @@
 run_name: 'demo_weights'
 
 # Adjust that depending on whether you want to test a model that was only pretrained or also finetuned
-finetune: True
+finetune: False
 
 # Usually this is model_best.h5
 # If you're using demo weights, this is 
 # aicd_demo_weights_finetuned.h5 if finetune==True
 # aicd_demo_weights_pretrained.h5 if finetune==False
-model_name: 'aicd_demo_weights_finetuned.h5'
+model_name: 'aicd_demo_weights_pretrained.h5'
 
 # if finetune==True: crf_rnn_channel_1_newaxis
 # for finetune==False: seg_process_sigmoid
-hidden_layer_seg_map_name: 'crf_rnn_channel_1_newaxis'
+hidden_layer_seg_map_name: 'seg_process_sigmoid'
+
+# 0.7 if finetune==True
+# 0.1 if finetune==False
+confidence_thresh_seg: 0.7
 
 dataset_root: 'AICD_strong_shadows_incl_no_change'
 
@@ -20,7 +24,3 @@ test_events_list: 'csv_files/events_strong_shadows_incl_no_change_test.csv'
 classes: 'csv_files/classes.csv'
 
 image_size: [128,128,3]
-
-# 0.7 if finetune==True
-# 0.1 if finetune==False
-confidence_thresh_seg: 0.7
