@@ -1,10 +1,12 @@
+[![License CC BY-NC-SA 4.0](https://img.shields.io/badge/license-CC4.0-blue.svg)](https://raw.githubusercontent.com/nvlabs/SPADE/master/LICENSE.md)
+
 # W-CDNet
 This repo presents [W-CDNet](https://arxiv.org/abs/2011.03577), a neural network for weakly supervised change detection. The model uses a siamese network structure, consisting of two U-Nets with shared weights. The core of the model, the *Change Segmentation and Classification* (CSC) module, makes sure that the network learns to generate a change mask even if the model is being trained with weak supervision only.
 
 ![W-CDNet model structure](docs/model_all_simplified_cropped.svg)
 
-## Example
-Example scripts are provided for training and testing on the AICD dataset. 
+## Demo
+Demo scripts are provided for training and testing on the AICD dataset. 
 
 ### Setup
 See *requirements.txt* or *requirements_gpu.txt*, depending on whether a GPU is available or not.
@@ -25,38 +27,45 @@ cd crfasrnn_keras/src/cpp
 make
 ``` 
 
+The images for train/val/test can be found [here](https://drive.google.com/file/d/1HLa4xpUZBcK_1__24_QuW3YPFRI_H5rF/view?usp=sharing). Download these images.
+```
+cd demo
+gdown https://drive.google.com/uc?id=1HLa4xpUZBcK_1__24_QuW3YPFRI_H5rF
+unzip AICD_strong_shadows_incl_no_change.zip
+```
+
 ### Train
 Training is split up into "Train" and "Finetune". 
 
 **Train**:
-- Go to *Examples/params/aicd_train.py*
+- Go to *demo/params.py*
   - set a new **run_index** (increase cunter)
   - set **finetune** to False
-- Go to Examples and run
+  - Execute the script
 ```
 python aicd_train_weakly_supervised.py
 ```
 
 **Finetune**:
-- Go to *Examples/params/aicd_train.py*
+- Go to *demo/params.py*
   - set **finetune** to True
-- Go to Examples and run
+- Execute the script
 ```
 python aicd_train_weakly_supervised.py
 ```
 
-- The models will be saved under *Examples/models*
+- The models will be saved under *demo/models*
 
 ### Test
-- Go to *Examples/params/aicd_segment_and_classify_and_evaluate.py*
+- Go to *demo/params/aicd_segment_and_classify_and_evaluate.py*
   - set the parameters within the section marked with **adjust these parameters**
-- Go to *Examples* and run 
+- Go to *demo* and run 
 ```
 chmod +x aicd_run_tests_weakly_supervised.sh
 ./aicd_run_tests_weakly_supervised.sh
 ```
 
-- The results will be saved under *Examples/results*
+- The results will be saved under *demo/results*
 
 
 ## Image-Level Labels for AICD Dataset
@@ -72,12 +81,10 @@ You can find the image-level labels in the folder *AICD_image_level_labels*. The
 [arXiv](https://arxiv.org/abs/2011.03577)
 
 ```
-@misc{andermatt2020weakly,
-      title={A Weakly Supervised Convolutional Network for Change Segmentation and Classification}, 
-      author={Philipp Andermatt and Radu Timofte},
-      year={2020},
-      eprint={2011.03577},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
+@inproceedings{andermatt2020weakly,
+  title={A Weakly Supervised Convolutional Network for Change Segmentation and Classification},
+  author={Andermatt, Philipp and Timofte, Radu},
+  booktitle={Proceedings of the Asian Conference on Computer Vision},
+  year={2020}
 }
 ```

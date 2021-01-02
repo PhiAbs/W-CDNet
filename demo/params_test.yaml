@@ -1,0 +1,12 @@
+run_name: 'aicd__pretrain__example_run_000' # run index name of the model to be tested (same as for training!)
+
+dataset_root: 'AICD_strong_shadows_incl_no_change'
+
+test_events_list: 'csv_files/events_strong_shadows_incl_no_change_test.csv'
+classes: 'csv_files/classes.csv'
+
+image_size: [128,128,3]
+
+model_name: 'model_best.h5'
+
+hidden_layer_seg_map_name: 'seg_process_sigmoid' # crf_rnn_channel_1_newaxis, seg_process_sigmoid
