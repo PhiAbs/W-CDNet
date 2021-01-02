@@ -383,7 +383,7 @@ class W_Net():
         model_pretrained = self.double_stream_6_subs_64_filters_remapfactor_32()
         
         if load_pretrained_weights:
-            model_pretrained.load_weights(self.args.pretrained_model_file)
+            model_pretrained.load_weights(self.args['pretrained_model_file'])
 
         # the input to the crf_rnn block has to have the following properties:
         # - RGB image (range [0, 255]) -> invert vgg16 preprocessing

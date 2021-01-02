@@ -18,8 +18,7 @@ import importlib
 
 class TestWNet():
     def __init__(
-            self, finetune, params_file):
-        self.finetune=finetune
+            self, params_file):
 
         print('loading parameters')
         with open(params_file, 'r') as f:
@@ -73,7 +72,7 @@ class TestWNet():
             input_size=self.args['image_size'],
             args=self.args)
 
-        if self.finetune:
+        if self.args['finetune']:
             model = WNet.add_crf_double_stream_inputsize_128_remapfactor_16(load_pretrained_weights=False)
         else: 
             model = WNet.double_stream_6_subs_64_filters_remapfactor_32()
@@ -107,7 +106,7 @@ class TestWNet():
             prediction = model.predict(model_input)[0]
             top_prediction_idx = np.argmax(prediction)
 
-            print('GT: {label}, top prediction: {prediction}'.format(label=np.argmax(label), prediction=top_prediction_idx))
+            print('Ground Truth: {label}, top prediction: {prediction}'.format(label=np.argmax(label), prediction=top_prediction_idx))
             # Extract the predicted change mask
             seg_mask_pred = self.get_segmentation_layer_output(model_input, layer_output_function)
 
@@ -117,7 +116,7 @@ class TestWNet():
             # - crop out inner part (128x128, without added border)
             seg_mask_pred = cv2.resize(seg_mask_pred, (148, 148))
             seg_mask_pred = seg_mask_pred[10:138, 10:138]
-            seg_mask_pred = (seg_mask_pred > float(self.args['confidence_thresh_seg']))
+            seg_mask_pred_thresh = (seg_mask_pred > float(self.args['confidence_thresh_seg']))
 
             # load ground truth seg mask
             seg_mask_path = image_ids_current_paths[idx].replace('_moving', '_gtmask').replace('Images_Shadows', 'GroundTruth')
@@ -137,15 +136,15 @@ class TestWNet():
                 plt.axis('off')
                 plt.subplot(1,5,3)
                 plt.imshow((seg_mask_gt_binarized[:,:,np.newaxis] * image_current_raw).astype(np.uint8))
-                plt.gca().set_title('GT ' + str(np.argmax(label)))
+                plt.gca().set_title('Ground Truth: ' + str(np.argmax(label)))
                 plt.axis('off')
                 plt.subplot(1,5,4)
-                plt.imshow((seg_mask_pred[:,:,np.newaxis] * image_current_raw).astype(np.uint8))
-                plt.gca().set_title('Pred ' + str(top_prediction_idx))
+                plt.imshow((seg_mask_pred_thresh[:,:,np.newaxis] * image_current_raw).astype(np.uint8))
+                plt.gca().set_title('Prediction: ' + str(top_prediction_idx))
                 plt.axis('off')
                 plt.subplot(1,5,5)
                 plt.imshow(seg_mask_pred)
-                plt.gca().set_title('Pred ')
+                plt.gca().set_title('Raw segmentation mask')
                 plt.axis('off')
                 plt.show()
                 time.sleep(2)

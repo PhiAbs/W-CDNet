@@ -17,9 +17,7 @@ import utils
 
 class TrainWNet():
     def __init__(
-            self, finetune, params_file):
-
-        self.finetune = finetune
+            self, params_file):
 
         package_dir = sys.path[0]
 
@@ -31,7 +29,7 @@ class TrainWNet():
         self.args['parameter_file'] = os.path.join(package_dir, 'log', 'parameters', self.args['run_name'] + '.txt')
         self.args['lr'] = float(self.args['lr'])
 
-        if self.finetune:
+        if self.args['finetune']:
             self.args['pretrained_model_file'] = os.path.join(package_dir, 'models', self.args['run_name'].replace('pretrain', 'finetune'), self.args['pretrained_model'])
 
         # clear session before we start with training
@@ -188,7 +186,7 @@ class TrainWNet():
             input_size=self.args['image_size'],
             args=self.args)
 
-        if self.finetune:
+        if self.args['finetune']:
             model = WNet.add_crf_double_stream_inputsize_128_remapfactor_16(load_pretrained_weights=True)
         else:
             model = WNet.double_stream_6_subs_64_filters_remapfactor_32()

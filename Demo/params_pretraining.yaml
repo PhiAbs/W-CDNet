@@ -1,4 +1,6 @@
-run_name: 'aicd__pretrain__example_run_000' # run index name of the model to be tested (same as for training!)
+run_name: 'aicd__pretrain__example_run_000'
+
+finetune: False
 
 dataset_root: 'AICD_strong_shadows_incl_no_change'
 
@@ -7,8 +9,6 @@ val_list: 'csv_files/events_strong_shadows_incl_no_change_val.csv'
 classes: 'csv_files/classes.csv'
 
 image_size: [128,128,3]
-
-pretrained_model: 'model_best.h5'
 
 batch_size: 8
 lr: 1e-5
