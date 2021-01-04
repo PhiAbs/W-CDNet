@@ -1,5 +1,3 @@
-__author__ = 'anphilip'
-
 import os
 import csv
 import cv2
@@ -20,9 +18,12 @@ def load_images_minibatch(input_paths, input_size):
     """
     Load images for each minibatch individually and resize them
 
-    args:
+    Args:
     - input_paths: paths to images of current minibatch
     - input_size: image size
+
+    Returns:
+    - input_images: images
     """
     input_images = list(map(
         lambda x: image.load_img(x, color_mode='rgb', target_size=input_size),
@@ -37,8 +38,16 @@ def load_images_minibatch(input_paths, input_size):
 
 
 def image_augmentation(images):
+    """Augment images during training.
+
+    Args: 
+    - images: images to be augmented
+
+    Returns:
+    - images_augmented: well, the augmented images
+    """
     # inspired by https://www.kaggle.com/mpalermo/keras-pipeline-custom-generator-imgaug
-    sometimes = lambda aug: iaa.Sometimes(0.5, aug)
+    def sometimes(aug): return iaa.Sometimes(0.5, aug)
     seq = iaa.Sequential([
         # apply the following augmenters to most images
         sometimes(iaa.Affine(
@@ -48,8 +57,8 @@ def image_augmentation(images):
             translate_percent={"x": (-0.01, 0.01), "y": (-0.01, 0.01)},
             # rotate by -1 to +1 degrees
             rotate=(-1, 1),
-            )),
-        iaa.SomeOf((0, 3),[
+        )),
+        iaa.SomeOf((0, 3), [
             iaa.OneOf([
                 iaa.GaussianBlur((0, 1.0)),
                 # blur images with a sigma between 0 and 3.0
@@ -61,15 +70,15 @@ def image_augmentation(images):
             iaa.Sharpen(alpha=(0, 1.0), lightness=(0.9, 1.1)),
             # sharpen images,
             iaa.AdditiveGaussianNoise(loc=0,
-                                        scale=(0.0, 0.01 * 255),
-                                        per_channel=0.5),
+                                      scale=(0.0, 0.01 * 255),
+                                      per_channel=0.5),
             # add gaussian noise to images
             iaa.OneOf([
                 iaa.Dropout((0.01, 0.05), per_channel=0.5),
                 # randomly remove up to 10% of the pixels
                 iaa.CoarseDropout((0.01, 0.03),
-                                    size_percent=(0.01, 0.02),
-                                    per_channel=0.2),
+                                  size_percent=(0.01, 0.02),
+                                  per_channel=0.2),
             ]),
             iaa.Add((-20, 20), per_channel=0.5),
             sometimes(iaa.ElasticTransformation(alpha=(0.5, 2),
@@ -79,14 +88,14 @@ def image_augmentation(images):
             # sometimes move parts of the image around
             sometimes(iaa.PerspectiveTransform(scale=(0.01, 0.1))),
             # sometimes cut out part of the image
-            sometimes(iaa.Cutout(nb_iterations=(0, 3), 
-                                    size=(0.1, 0.3), 
-                                    squared=False, 
-                                    cval=(0, 255), 
-                                    fill_per_channel=0.5)),
-            ],
-                    random_order=True)
+            sometimes(iaa.Cutout(nb_iterations=(0, 3),
+                                 size=(0.1, 0.3),
+                                 squared=False,
+                                 cval=(0, 255),
+                                 fill_per_channel=0.5)),
         ],
+            random_order=True)
+    ],
         random_order=True)
 
     images_augmented = seq.augment_images(images)
@@ -95,49 +104,56 @@ def image_augmentation(images):
 
 
 def image_augmentation_for_both_images(images_curr, images_prev):
-    """
-    apply the same transformation to both images in order to keep them aligned
-    """
+    """Apply the same transformation to both images in order to keep them aligned
 
+    """
     # inspired by https://www.kaggle.com/mpalermo/keras-pipeline-custom-generator-imgaug
     # apply up-down flip in 1/4 of all images
     # apply left-right flip in 1/4 of all images
-    if random.randint(0,3) == 0:
+    if random.randint(0, 3) == 0:
         images_curr = iaa.flip.fliplr(images_curr)
         images_prev = iaa.flip.fliplr(images_prev)
 
-    if random.randint(0,3) == 0:
+    if random.randint(0, 3) == 0:
         images_curr = iaa.flip.flipud(images_curr)
         images_prev = iaa.flip.flipud(images_prev)
-    
+
     return images_curr, images_prev
 
 
 def image_augmentation_add_border(images_curr, images_prev):
-    """
-    mirror the image edges. this should make it easier to detect objects close to the border.
+    """Mirror the image edges. This should make it easier to detect objects close to the border.
     directly resize the images to the input shape!
 
-    args:
+    Args:
     - images_curr: batch containing the current images. shape: [batch_size, rows, cols, channels]
     - images_prev: batch containing the previous images. shape: [batch_size, rows, cols, channels]
     """
-
     border_size = 10
     image_size = (np.shape(images_curr)[2], np.shape(images_curr)[1])
     batch_size = np.shape(images_curr)[0]
 
     for idx in range(batch_size):
-        images_curr[idx, :, :, :] = cv2.resize(cv2.copyMakeBorder(images_curr[idx, :, :, :], border_size, border_size, border_size, border_size, borderType=cv2.BORDER_REFLECT), image_size)
-        images_prev[idx, :, :, :] = cv2.resize(cv2.copyMakeBorder(images_prev[idx, :, :, :], border_size, border_size, border_size, border_size, borderType=cv2.BORDER_REFLECT), image_size)
+        images_curr[idx, :, :, :] = cv2.resize(cv2.copyMakeBorder(
+            images_curr[idx, :, :, :], border_size, border_size, border_size, border_size, borderType=cv2.BORDER_REFLECT), image_size)
+        images_prev[idx, :, :, :] = cv2.resize(cv2.copyMakeBorder(
+            images_prev[idx, :, :, :], border_size, border_size, border_size, border_size, borderType=cv2.BORDER_REFLECT), image_size)
 
     return images_curr, images_prev
 
 
 def load_data_for_aicd(classes_file, events_list, dataset_root):
+    """Load classes, labels, image ids, etc. (Data needed for training)
+
+    Args:
+    - classes_file: csv file name (contains class information)
+    - events_list: csv file containing event information
+    - dataset_root: path to folder containing images
+    """
     # read data from csv files
-    classes = pd.read_csv(classes_file)['label_ids_extended'].tolist()
-    class_descriptions = pd.read_csv(classes_file)['description'].tolist()
+    classes_df = pd.read_csv(classes_file)
+    classes = classes_df['label_ids_extended'].tolist()
+    class_descriptions = classes_df['description'].tolist()
     num_classes = len(classes)
     print('number of classes: ' + str(num_classes))
 
@@ -153,8 +169,10 @@ def load_data_for_aicd(classes_file, events_list, dataset_root):
         unusable_images_counter = 0
 
         for idx, row in enumerate(reader):
-            image_id_current_path = os.path.join(dataset_root, str(row['image_ids_current']))
-            image_id_previous_path = os.path.join(dataset_root, str(row['image_ids_previous']))
+            image_id_current_path = os.path.join(
+                dataset_root, str(row['image_ids_current']))
+            image_id_previous_path = os.path.join(
+                dataset_root, str(row['image_ids_previous']))
 
             # check if the image id paths actually link to an image and if the class label is available
             # If it does, we store the path
@@ -206,7 +224,7 @@ def load_data_for_aicd(classes_file, events_list, dataset_root):
             'balanced', np.array(classes), np.array(label_list_for_class_balancing))
     except:
         print('could not compute class weights')
-        class_weights = np.array([1,1,1])
+        class_weights = np.array([1, 1, 1])
     class_weights = dict(enumerate(class_weights))
 
     return(
@@ -220,15 +238,16 @@ def load_data_for_aicd(classes_file, events_list, dataset_root):
         np.array(label_ids_extended_lists),
     )
 
+
 class CustomDataGenerator(Sequence):
     def __init__(
             self,
-            input_paths_current, 
+            input_paths_current,
             input_paths_previous,
-            labels, 
-            batch_size, 
-            input_size 
-            ):
+            labels,
+            batch_size,
+            input_size
+    ):
         self.input_paths_current = input_paths_current
         self.input_paths_previous = input_paths_previous
         self.labels = labels
@@ -246,30 +265,35 @@ class CustomDataGenerator(Sequence):
             self.input_paths_current[(idx * self.batch_size):((idx+1) * self.batch_size)], self.input_size)
 
         # add border around image (output has same shape as input!!)
-        self.input_images_current, self.input_images_previous = image_augmentation_add_border(self.input_images_current, self.input_images_previous)
+        self.input_images_current, self.input_images_previous = image_augmentation_add_border(
+            self.input_images_current, self.input_images_previous)
 
         # augment the images
         # TODO turn on image augmentation again!!
-        self.input_images_previous = image_augmentation(self.input_images_previous)
-        self.input_images_current = image_augmentation(self.input_images_current)
+        self.input_images_previous = image_augmentation(
+            self.input_images_previous)
+        self.input_images_current = image_augmentation(
+            self.input_images_current)
 
         # apply flips to both the current and previous image simultaneously
-        self.input_images_current, self.input_images_previous = image_augmentation_for_both_images(self.input_images_current, self.input_images_previous)
+        self.input_images_current, self.input_images_previous = image_augmentation_for_both_images(
+            self.input_images_current, self.input_images_previous)
 
-        self.minibatch_data = [vgg16_preprocess_input(self.input_images_previous), vgg16_preprocess_input(self.input_images_current)]
-        
+        self.minibatch_data = [vgg16_preprocess_input(
+            self.input_images_previous), vgg16_preprocess_input(self.input_images_current)]
+
         return self.minibatch_data, self.labels[(idx * self.batch_size):((idx+1) * self.batch_size)]
 
 
 class CustomDataGeneratorForValidation(Sequence):
     def __init__(
             self,
-            input_paths_current, 
+            input_paths_current,
             input_paths_previous,
-            labels, 
-            batch_size, 
-            input_size 
-            ):
+            labels,
+            batch_size,
+            input_size
+    ):
         self.input_paths_current = input_paths_current
         self.input_paths_previous = input_paths_previous
         self.labels = labels
@@ -287,8 +311,10 @@ class CustomDataGeneratorForValidation(Sequence):
             self.input_paths_current[(idx * self.batch_size):((idx+1) * self.batch_size)], self.input_size)
 
         # add border around image (output has same shape as input!!)
-        self.input_images_current, self.input_images_previous = image_augmentation_add_border(self.input_images_current, self.input_images_previous)
+        self.input_images_current, self.input_images_previous = image_augmentation_add_border(
+            self.input_images_current, self.input_images_previous)
 
-        self.minibatch_data = [vgg16_preprocess_input(self.input_images_previous), vgg16_preprocess_input(self.input_images_current)]
+        self.minibatch_data = [vgg16_preprocess_input(
+            self.input_images_previous), vgg16_preprocess_input(self.input_images_current)]
 
         return self.minibatch_data, self.labels[(idx * self.batch_size):((idx+1) * self.batch_size)]

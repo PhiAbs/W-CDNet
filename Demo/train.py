@@ -15,6 +15,7 @@ from tensorflow.keras import backend as K
 import architectures as arch
 import utils
 
+
 class TrainWNet():
     def __init__(
             self, params_file):
@@ -25,12 +26,15 @@ class TrainWNet():
             self.args = yaml.safe_load(f.read())
 
         self.args['image_size'] = tuple(self.args['image_size'])
-        self.args['result_root'] = os.path.join(package_dir, 'models', self.args['run_name'])
-        self.args['parameter_file'] = os.path.join(package_dir, 'log', 'parameters', self.args['run_name'] + '.txt')
+        self.args['result_root'] = os.path.join(
+            package_dir, 'models', self.args['run_name'])
+        self.args['parameter_file'] = os.path.join(
+            package_dir, 'log', 'parameters', self.args['run_name'] + '.txt')
         self.args['lr'] = float(self.args['lr'])
 
         if self.args['finetune']:
-            self.args['pretrained_model_file'] = os.path.join(package_dir, 'models', self.args['run_name'].replace('pretrain', 'finetune'), self.args['pretrained_model'])
+            self.args['pretrained_model_file'] = os.path.join(package_dir, 'models', self.args['run_name'].replace(
+                'pretrain', 'finetune'), self.args['pretrained_model'])
 
         # clear session before we start with training
         K.clear_session()
@@ -56,7 +60,8 @@ class TrainWNet():
         param_file.close()
 
         self.tensorboard_callback = TensorBoard(
-            log_dir=os.path.join(package_dir, 'log', 'tensorboard', datetime.now().strftime("%Y%m%d-%H%M%S") + '_', self.args['run_name']),
+            log_dir=os.path.join(package_dir, 'log', 'tensorboard', datetime.now(
+            ).strftime("%Y%m%d-%H%M%S") + '_', self.args['run_name']),
             histogram_freq=1,
             write_graph=True,
             write_images=False,
@@ -68,25 +73,27 @@ class TrainWNet():
             update_freq=100
         )
 
-
     def init_train_params(self, lr):
+        """Initialize loss function, optimizer, val metrics and lr scheduler.
+
+        """
         loss_fn = losses.CategoricalCrossentropy()
         optimizer = optimizers.Adam(lr=lr)
         val_metrics = [tf.keras.metrics.Precision(thresholds=0.5),
-                    tf.keras.metrics.Recall(thresholds=0.5),
-                    tf.keras.metrics.CategoricalAccuracy()
-                    ]
+                       tf.keras.metrics.Recall(thresholds=0.5),
+                       tf.keras.metrics.CategoricalAccuracy()
+                       ]
 
-        lr_scheduler = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=self.args['lr_scheduler_patience'], min_lr=1e-9)
+        lr_scheduler = ReduceLROnPlateau(
+            monitor='val_loss', factor=0.5, patience=self.args['lr_scheduler_patience'], min_lr=1e-9)
 
         return loss_fn, optimizer, val_metrics, lr_scheduler
 
-
     def start_fit_generator(self,
-                            model, 
-                            train_image_ids_current_paths, 
-                            train_image_ids_previous_paths, 
-                            train_labels, 
+                            model,
+                            train_image_ids_current_paths,
+                            train_image_ids_previous_paths,
+                            train_labels,
                             val_image_ids_current_paths,
                             val_image_ids_previous_paths,
                             val_labels,
@@ -96,7 +103,9 @@ class TrainWNet():
                             epochs,
                             model_name_best,
                             model_name_final):
+        """Start training loop.
 
+        """
         hist_pre = model.fit_generator(
             generator=utils.CustomDataGenerator(
                 input_paths_current=train_image_ids_current_paths,
@@ -141,28 +150,30 @@ class TrainWNet():
                 )
             ],
         )
-        model.save_weights(os.path.join(self.args['result_root'], model_name_final))
-
+        model.save_weights(os.path.join(
+            self.args['result_root'], model_name_final))
 
     def execute_training(self):
+        """Set up training and start training loop.
 
-        # ====================================================
-        # Preparation
-        # ====================================================
+        """
         # parameters
-        self.args['dataset_root'] = os.path.expanduser(self.args['dataset_root'])
+        self.args['dataset_root'] = os.path.expanduser(
+            self.args['dataset_root'])
         self.args['result_root'] = os.path.expanduser(self.args['result_root'])
         self.args['classes'] = os.path.expanduser(self.args['classes'])
 
         print('start loading training data from csv files')
         # load both train and eval data, but separately, since they are now stored in separate files!
         train_labels, train_image_ids_current_paths, train_image_ids_previous_paths, \
-        _, _, num_classes, _, _ = \
-            utils.load_data_for_aicd(self.args['classes'], self.args['train_list'], self.args['dataset_root'])
+            _, _, num_classes, _, _ = \
+            utils.load_data_for_aicd(
+                self.args['classes'], self.args['train_list'], self.args['dataset_root'])
 
         print('start loading evaluation data from csv files')
         val_labels, val_image_ids_current_paths, val_image_ids_previous_paths, _, _, _, _, _ = \
-            utils.load_data_for_aicd(self.args['classes'], self.args['val_list'], self.args['dataset_root'])
+            utils.load_data_for_aicd(
+                self.args['classes'], self.args['val_list'], self.args['dataset_root'])
         print('done with loading data from csv files')
 
         # shuffle training dataset
@@ -187,7 +198,8 @@ class TrainWNet():
             args=self.args)
 
         if self.args['finetune']:
-            model = WNet.add_crf_double_stream_inputsize_128_remapfactor_16(load_pretrained_weights=True)
+            model = WNet.add_crf_double_stream_inputsize_128_remapfactor_16(
+                load_pretrained_weights=True)
         else:
             model = WNet.double_stream_6_subs_64_filters_remapfactor_32()
 
@@ -206,21 +218,21 @@ class TrainWNet():
         )
 
         model.summary()
-        
+
         print('Trainable layers')
         for layer in model.layers:
             print(layer, layer.trainable)
 
         self.start_fit_generator(model,
-                            train_image_ids_current_paths,
-                            train_image_ids_previous_paths,
-                            train_labels,
-                            val_image_ids_current_paths,
-                            val_image_ids_previous_paths,
-                            val_labels,
-                            lr_scheduler,
-                            batch_size=self.args['batch_size'],
-                            steps_per_epoch=self.args['steps_per_epoch'],
-                            epochs=self.args['epochs'],
-                            model_name_best='model_best.h5',
-                            model_name_final='model_final.h5')
+                                 train_image_ids_current_paths,
+                                 train_image_ids_previous_paths,
+                                 train_labels,
+                                 val_image_ids_current_paths,
+                                 val_image_ids_previous_paths,
+                                 val_labels,
+                                 lr_scheduler,
+                                 batch_size=self.args['batch_size'],
+                                 steps_per_epoch=self.args['steps_per_epoch'],
+                                 epochs=self.args['epochs'],
+                                 model_name_best='model_best.h5',
+                                 model_name_final='model_final.h5')
